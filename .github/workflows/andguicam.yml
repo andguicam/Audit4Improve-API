@@ -1,4 +1,4 @@
-name: Flujo de trabajo para ejecutar los test
+name: Flujo de trabajo para andguicam
 on:
   workflow_dispatch:
   issues:
