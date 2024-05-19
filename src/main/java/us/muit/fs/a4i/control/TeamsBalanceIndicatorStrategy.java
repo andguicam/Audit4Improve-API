@@ -38,14 +38,16 @@ public class TeamsBalanceIndicatorStrategy implements IndicatorStrategy<Double> 
 			Double teamsBalanceResult;
             
 			// Se realiza el c�lculo del indicador
-			teamsBalanceResult = teamsBalance.get().getValue()*100/repositories.get().getValue();
+			teamsBalanceResult = (Double)teamsBalance.get().getValue()*100/repositories.get().getValue();
 
-            log.info(teamsBalanceResult.toString());
+            log.info("teamsBalanceResult: "+teamsBalanceResult.toString());
 			try {
 				// Se crea el indicador
-				indicatorReport = new ReportItem.ReportItemBuilder<Double>("teamsBalance", teamsBalanceResult)
-						.indicator(IndicatorState.UNDEFINED).build();
-                log.info(indicatorReport.toString());
+				indicatorReport = new ReportItem.ReportItemBuilder<Double>("teamsBalance", teamsBalanceResult).						
+                metrics(Arrays.asList(teamsBalance.get(), repositories.get()))
+                .indicator(IndicatorState.UNDEFINED).build();
+
+                log.info("IndicatorReport: "+indicatorReport.toString());
                 log.info("Despues del try");
 			} catch (ReportItemException e) {
 				log.info("Error en ReportItemBuilder.");
