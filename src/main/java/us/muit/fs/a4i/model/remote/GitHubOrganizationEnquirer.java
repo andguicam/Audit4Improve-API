@@ -5,19 +5,21 @@ package us.muit.fs.a4i.model.remote;
 
 import java.io.IOException;
 
+import java.util.HashMap;
 import java.util.List;
 
+import java.util.Map;
 import java.util.logging.Logger;
 
 
-import org.kohsuke.github.GHOrganization;
+import org.kohsuke.github.*;
 
+
+import org.kohsuke.github.GHOrganization;
+import org.kohsuke.github.GHProject;
+import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.PagedIterable;
-import org.kohsuke.github.GHProject;
-
-
-
 import us.muit.fs.a4i.exceptions.MetricException;
 
 import us.muit.fs.a4i.exceptions.ReportItemException;
@@ -60,7 +62,9 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 		metricNames.add("teams");
 		metricNames.add("openProjects");
 		metricNames.add("closedProjects");
-		metricNames.add("followers");	
+		metricNames.add("followers");
+		metricNames.add("issuesPerRepository");
+		metricNames.add("teamsPerRepository");
 		log.info("Incluidos nombres metricas en Enquirer");
 	}
 	
@@ -129,6 +133,11 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 			report.addMetric(getClosedProjects(organization));		
 			log.info("Incluida metrica closedProjects ");
 
+            report.addMetric(getIssuesPerRepository(organization));
+			log.info("Incluida metrica issuesPeRepository ");
+
+			report.addMetric(getTeamsPerRespository(organization));
+			log.info("Incluida metrica teamsPerRepository ");
 			
 		} catch (Exception e) {
 			log.severe("Problemas en la conexión " + e);
@@ -197,7 +206,13 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 			break;
 		case "followers":
 			metric=getFollowers(organization);
-			break;	
+			break;
+        case "issuesPerRepository":
+            metric=getIssuesPerRepository(organization);
+            break;
+        case "teamsPerRepository":
+            metric=getTeamsPerRepository(organization);
+            break;
 		default:
 			throw new MetricException("La métrica " + metricName + " no está definida para un repositorio");
 		}
@@ -217,6 +232,37 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 		}		
 		return builder.build();
 	}
+
+	private ReportItem getIssuesPerRepository(GHOrganization organization) {
+		//TODO
+        log.info("Consultando los issues de cada uno de los repositorios de la organización");
+        ReportItemBuilder<Map <GHRepository,Integer>> builder=null;
+        try {
+			Map <GHRepository,Integer> mapa = new HashMap<>();
+            builder = new ReportItem.ReportItemBuilder<Map <GHRepository,Integer>>("repositoriesWithOpenPullRequest",
+                    mapa);
+            builder.source("GitHub");
+        } catch (ReportItemException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return builder.build();
+    }
+
+    	private ReportItem getTeamsPerRepository(GHOrganization organization) {
+			//TODO
+            log.info("Consultando los repositorios con pull requests abiertos");
+            ReportItemBuilder<Integer> builder=null;
+            try {
+                builder = new ReportItem.ReportItemBuilder<Integer>("repositoriesWithOpenPullRequest",
+                        organization.getRepositoriesWithOpenPullRequests().size());
+                builder.source("GitHub");
+            } catch (ReportItemException | IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            return builder.build();
+        }
 	
 	private ReportItem getRepositories(GHOrganization organization) {
 		log.info("Consultando los repositorios");
@@ -229,6 +275,19 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}		
+		return builder.build();
+	}
+	private ReportItem listRepositories(GHOrganization organization) {
+		log.info("Obteniendo la lista de repositorios");
+		ReportItemBuilder<Map<String,GHRepository>> builder=null;
+		try {
+			builder = new ReportItem.ReportItemBuilder<Map<String, GHRepository>>("listrepositories",
+					organization.getRepositories()); 
+			builder.source("GitHub");
+		} catch (ReportItemException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return builder.build();
 	}
 	
