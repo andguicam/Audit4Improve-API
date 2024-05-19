@@ -7,6 +7,7 @@ import java.io.IOException;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 
 import java.util.Map;
 import java.util.logging.Logger;
@@ -14,12 +15,6 @@ import java.util.logging.Logger;
 
 import org.kohsuke.github.*;
 
-
-import org.kohsuke.github.GHOrganization;
-import org.kohsuke.github.GHProject;
-import org.kohsuke.github.GHRepository;
-import org.kohsuke.github.GitHub;
-import org.kohsuke.github.PagedIterable;
 import us.muit.fs.a4i.exceptions.MetricException;
 
 import us.muit.fs.a4i.exceptions.ReportItemException;
@@ -63,8 +58,7 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 		metricNames.add("openProjects");
 		metricNames.add("closedProjects");
 		metricNames.add("followers");
-		metricNames.add("issuesPerRepository");
-		metricNames.add("teamsPerRepository");
+		metricNames.add("teamsBalance");
 		log.info("Incluidos nombres metricas en Enquirer");
 	}
 	
@@ -133,11 +127,8 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 			report.addMetric(getClosedProjects(organization));		
 			log.info("Incluida metrica closedProjects ");
 
-            report.addMetric(getIssuesPerRepository(organization));
-			log.info("Incluida metrica issuesPeRepository ");
-
-			report.addMetric(getTeamsPerRepository(organization));
-			log.info("Incluida metrica teamsPerRepository ");
+			report.addMetric(getTeamsBalance(organization));
+			log.info("Incluida metrica teamsBalance ");
 			
 		} catch (Exception e) {
 			log.severe("Problemas en la conexión " + e);
@@ -207,11 +198,8 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 		case "followers":
 			metric=getFollowers(organization);
 			break;
-        case "issuesPerRepository":
-            metric=getIssuesPerRepository(organization);
-            break;
-        case "teamsPerRepository":
-            metric=getTeamsPerRepository(organization);
+		case "teamsBalance":
+            metric=getTeamsBalance(organization);
             break;
 		default:
 			throw new MetricException("La métrica " + metricName + " no está definida para un repositorio");
@@ -233,25 +221,23 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 		return builder.build();
 	}
 
-	private ReportItem getIssuesPerRepository(GHOrganization organization) {
+	private Map <GHRepository,Integer> getIssuesPerRepository(GHOrganization organization) {
         log.info("Consultando los issues de cada uno de los repositorios de la organización");
-        ReportItemBuilder<Map <GHRepository,Integer>> builder=null;
+		Map <GHRepository,Integer> mapa = new HashMap<>();
         try {
-			Map <GHRepository,Integer> mapa = new HashMap<>();
+
 			PagedIterable<GHRepository> repositorios = organization.listRepositories();
 			for (GHRepository repo : repositorios) {
 				mapa.put(repo,repo.getIssues(GHIssueState.OPEN).size());				
 			}
-            builder = new ReportItem.ReportItemBuilder<Map <GHRepository,Integer>>("issuesPerRepository", mapa);
-            builder.source("GitHub");
-        } catch (ReportItemException|IOException e) {
+        } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        return builder.build();
+        return mapa;
     }
 
-	private ReportItem getTeamsPerRepository(GHOrganization organization) {
+	private Map <GHRepository,Integer> getTeamsPerRepository(GHOrganization organization) {
 		log.info("Consultando el númerdo de equipos por repositorio");
 		ReportItemBuilder<Map<GHRepository,Integer>> builder=null;
 		Map <GHRepository,Integer> mapa = new HashMap<>();
@@ -260,9 +246,41 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 			for (GHRepository repo : repositorios) {
 				mapa.put(repo,repo.getTeams().size());
 			}
-			builder = new ReportItem.ReportItemBuilder<Map <GHRepository,Integer>>("teamsPerRepository", mapa);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return mapa;
+	}
+
+	private ReportItem getTeamsBalance(GHOrganization organization) {
+
+		log.info("Consultando el equilibrio entre equipos e issues de los repositorios");
+		Integer issuesTotales= this.getIssuesPerRepository(organization).size();
+        Integer desarrolladoresTotales=(Integer) this.getTeams(organization).getValue();
+		Integer numProjects = (Integer) this.getRepositories(organization).getValue();
+		Map <GHRepository,Integer> issuesPerProject =this.getIssuesPerRepository(organization);
+		Map <GHRepository,Integer> teamsPerProject = this.getTeamsPerRepository(organization);
+		
+        Double desajustePromedioOrganizacion=0.0;
+        List<Double> desajustePromedioProyecto = new ArrayList<Double>();
+
+		
+		ReportItemBuilder<Integer> builder=null;
+		try {
+			//Calcular el desajuste promedio de cada proyecto y guardarlo en desajustePromedioProyecto
+			issuesPerProject.forEach((repo,numIssues)->
+				desajustePromedioProyecto.add((double) (Math.abs(numIssues/(issuesTotales)-(teamsPerProject.get(repo)/desarrolladoresTotales))))
+			);
+
+			//Sumar todos los desajustes y guardarlos en desajustePromedioOrganizacion
+			for (Double desajuste: desajustePromedioProyecto){
+				desajustePromedioOrganizacion+=desajuste;
+			}
+
+			builder = new ReportItem.ReportItemBuilder<Integer>("teamsBalance", (int) Math.round(desajustePromedioOrganizacion));
 			builder.source("GitHub");
-		} catch (ReportItemException | IOException e) {
+		} catch (ReportItemException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

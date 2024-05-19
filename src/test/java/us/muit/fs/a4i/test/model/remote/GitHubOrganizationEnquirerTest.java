@@ -6,6 +6,7 @@ package us.muit.fs.a4i.test.model.remote;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
 import java.util.Date;
@@ -159,16 +160,12 @@ public class GitHubOrganizationEnquirerTest {
 	 * @throws ReportItemException 
 	 */
 	@Test
-	void testIssuesPerRepository() throws MetricException, ReportItemException {
-		
-		ReportItem<Map<GHRepository,Integer>> metricsRepositoriesWithOpenIssues = ghEnquirer.getMetric("issuesPerRepository", "MIT-FS");
-		Map <GHRepository,Integer> mapa = metricsRepositoriesWithOpenIssues.getValue();
-		for
-		
-	
-		assertEquals(96,metricsRepositoriesWithOpenIssues.getValue()., "El repositorio no tiene el numero de issues abiertos esperado"); 
+	void testTeamsBalance() throws MetricException, ReportItemException {
+		//"message":"Must have admin rights to Repository."
+		//Es necesario tener permisos de administrador en la cuenta dueña de la organización
+		ReportItem<Integer> teamsBalance = ghEnquirer.getMetric("teamsBalance", "MIT-FS");
+		assertNotNull(teamsBalance.getValue(), "No se ha podido obtener el balance equipos-repositorios");
 		}
-	
 }
 
 	
