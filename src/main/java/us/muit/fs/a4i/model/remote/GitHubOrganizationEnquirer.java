@@ -136,7 +136,7 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
             report.addMetric(getIssuesPerRepository(organization));
 			log.info("Incluida metrica issuesPeRepository ");
 
-			report.addMetric(getTeamsPerRespository(organization));
+			report.addMetric(getTeamsPerRepository(organization));
 			log.info("Incluida metrica teamsPerRepository ");
 			
 		} catch (Exception e) {
@@ -234,35 +234,40 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 	}
 
 	private ReportItem getIssuesPerRepository(GHOrganization organization) {
-		//TODO
         log.info("Consultando los issues de cada uno de los repositorios de la organización");
         ReportItemBuilder<Map <GHRepository,Integer>> builder=null;
         try {
 			Map <GHRepository,Integer> mapa = new HashMap<>();
-            builder = new ReportItem.ReportItemBuilder<Map <GHRepository,Integer>>("repositoriesWithOpenPullRequest",
-                    mapa);
+			PagedIterable<GHRepository> repositorios = organization.listRepositories();
+			for (GHRepository repo : repositorios) {
+				mapa.put(repo,repo.getIssues(GHIssueState.OPEN).size());				
+			}
+            builder = new ReportItem.ReportItemBuilder<Map <GHRepository,Integer>>("issuesPerRepository", mapa);
             builder.source("GitHub");
-        } catch (ReportItemException e) {
+        } catch (ReportItemException|IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
         return builder.build();
     }
 
-    	private ReportItem getTeamsPerRepository(GHOrganization organization) {
-			//TODO
-            log.info("Consultando los repositorios con pull requests abiertos");
-            ReportItemBuilder<Integer> builder=null;
-            try {
-                builder = new ReportItem.ReportItemBuilder<Integer>("repositoriesWithOpenPullRequest",
-                        organization.getRepositoriesWithOpenPullRequests().size());
-                builder.source("GitHub");
-            } catch (ReportItemException | IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            return builder.build();
-        }
+	private ReportItem getTeamsPerRepository(GHOrganization organization) {
+		log.info("Consultando el númerdo de equipos por repositorio");
+		ReportItemBuilder<Map<GHRepository,Integer>> builder=null;
+		Map <GHRepository,Integer> mapa = new HashMap<>();
+		try {
+			PagedIterable<GHRepository> repositorios = organization.listRepositories();
+			for (GHRepository repo : repositorios) {
+				mapa.put(repo,repo.getTeams().size());
+			}
+			builder = new ReportItem.ReportItemBuilder<Map <GHRepository,Integer>>("teamsPerRepository", mapa);
+			builder.source("GitHub");
+		} catch (ReportItemException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return builder.build();
+	}
 	
 	private ReportItem getRepositories(GHOrganization organization) {
 		log.info("Consultando los repositorios");

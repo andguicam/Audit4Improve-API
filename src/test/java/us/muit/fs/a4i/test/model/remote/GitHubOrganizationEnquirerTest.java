@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.Map;
 
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GHRepositoryStatistics;
@@ -150,5 +151,24 @@ public class GitHubOrganizationEnquirerTest {
 	
 		assertEquals(6,metricsRepositoriesWithOpenPullRequest.getValue().intValue(), "El número de repositorios con pull requests abiertos no es el esperado"); 
 		}
+
+	/**
+	 * Test method for
+	 * GitHubOrganizationEnquirer
+	 * @throws MetricException 
+	 * @throws ReportItemException 
+	 */
+	@Test
+	void testIssuesPerRepository() throws MetricException, ReportItemException {
+		
+		ReportItem<Map<GHRepository,Integer>> metricsRepositoriesWithOpenIssues = ghEnquirer.getMetric("issuesPerRepository", "MIT-FS");
+		Map <GHRepository,Integer> mapa = metricsRepositoriesWithOpenIssues.getValue();
+		for
+		
+	
+		assertEquals(96,metricsRepositoriesWithOpenIssues.getValue()., "El repositorio no tiene el numero de issues abiertos esperado"); 
+		}
 	
 }
+
+	

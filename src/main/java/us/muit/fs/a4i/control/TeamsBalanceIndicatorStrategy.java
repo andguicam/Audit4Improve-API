@@ -17,7 +17,7 @@ import java.lang.Math;
 public class TeamsBalanceIndicatorStrategy implements IndicatorStrategy<Organizacion>{
 
 	private static Logger log = Logger.getLogger(Indicator.class.getName());
-    private static final List<String> REQUIRED_METRICS = Arrays.asList("organizacion");
+    private static final List<String> REQUIRED_METRICS = Arrays.asList("issuesPerRepository","teamsPerRepository","teams","repositories");
     
 
     @Override
