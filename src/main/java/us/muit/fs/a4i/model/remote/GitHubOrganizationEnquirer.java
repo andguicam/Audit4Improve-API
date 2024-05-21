@@ -5,18 +5,15 @@ package us.muit.fs.a4i.model.remote;
 
 import java.io.IOException;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 
+import java.util.Map;
 import java.util.logging.Logger;
 
 
-import org.kohsuke.github.GHOrganization;
-
-import org.kohsuke.github.GitHub;
-import org.kohsuke.github.PagedIterable;
-import org.kohsuke.github.GHProject;
-
-
+import org.kohsuke.github.*;
 
 import us.muit.fs.a4i.exceptions.MetricException;
 
@@ -60,7 +57,8 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 		metricNames.add("teams");
 		metricNames.add("openProjects");
 		metricNames.add("closedProjects");
-		metricNames.add("followers");	
+		metricNames.add("followers");
+		metricNames.add("teamsBalance");
 		log.info("Incluidos nombres metricas en Enquirer");
 	}
 	
@@ -129,6 +127,8 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 			report.addMetric(getClosedProjects(organization));		
 			log.info("Incluida metrica closedProjects ");
 
+			report.addMetric(getTeamsBalance(organization));
+			log.info("Incluida metrica teamsBalance ");
 			
 		} catch (Exception e) {
 			log.severe("Problemas en la conexión " + e);
@@ -197,7 +197,10 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 			break;
 		case "followers":
 			metric=getFollowers(organization);
-			break;	
+			break;
+		case "teamsBalance":
+            metric=getTeamsBalance(organization);
+            break;
 		default:
 			throw new MetricException("La métrica " + metricName + " no está definida para un repositorio");
 		}
@@ -217,6 +220,72 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 		}		
 		return builder.build();
 	}
+
+	private Map <GHRepository,Integer> getIssuesPerRepository(GHOrganization organization) {
+        log.info("Consultando los issues de cada uno de los repositorios de la organización");
+		Map <GHRepository,Integer> mapa = new HashMap<>();
+        try {
+
+			PagedIterable<GHRepository> repositorios = organization.listRepositories();
+			for (GHRepository repo : repositorios) {
+				mapa.put(repo,repo.getIssues(GHIssueState.OPEN).size());				
+			}
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return mapa;
+    }
+
+	private Map <GHRepository,Integer> getTeamsPerRepository(GHOrganization organization) {
+		log.info("Consultando el númerdo de equipos por repositorio");
+		ReportItemBuilder<Map<GHRepository,Integer>> builder=null;
+		Map <GHRepository,Integer> mapa = new HashMap<>();
+		try {
+			PagedIterable<GHRepository> repositorios = organization.listRepositories();
+			for (GHRepository repo : repositorios) {
+				mapa.put(repo,repo.getTeams().size());
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return mapa;
+	}
+
+	private ReportItem getTeamsBalance(GHOrganization organization) {
+
+		log.info("Consultando el equilibrio entre equipos e issues de los repositorios");
+		Integer issuesTotales= this.getIssuesPerRepository(organization).size();
+        Integer desarrolladoresTotales=(Integer) this.getTeams(organization).getValue();
+		Integer numProjects = (Integer) this.getRepositories(organization).getValue();
+		Map <GHRepository,Integer> issuesPerProject =this.getIssuesPerRepository(organization);
+		Map <GHRepository,Integer> teamsPerProject = this.getTeamsPerRepository(organization);
+		
+        Double desajustePromedioOrganizacion=0.0;
+        List<Double> desajustePromedioProyecto = new ArrayList<Double>();
+
+		
+		ReportItemBuilder<Integer> builder=null;
+		try {
+			//Calcular el desajuste promedio de cada proyecto y guardarlo en desajustePromedioProyecto
+			issuesPerProject.forEach((repo,numIssues)->
+				desajustePromedioProyecto.add((double) (Math.abs(numIssues/(issuesTotales)-(teamsPerProject.get(repo)/desarrolladoresTotales))))
+			);
+
+			//Sumar todos los desajustes y guardarlos en desajustePromedioOrganizacion
+			for (Double desajuste: desajustePromedioProyecto){
+				desajustePromedioOrganizacion+=desajuste;
+			}
+
+			builder = new ReportItem.ReportItemBuilder<Integer>("teamsBalance", (int) Math.round(desajustePromedioOrganizacion));
+			builder.source("GitHub");
+		} catch (ReportItemException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return builder.build();
+	}
 	
 	private ReportItem getRepositories(GHOrganization organization) {
 		log.info("Consultando los repositorios");
@@ -229,6 +298,19 @@ public class GitHubOrganizationEnquirer extends GitHubEnquirer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}		
+		return builder.build();
+	}
+	private ReportItem listRepositories(GHOrganization organization) {
+		log.info("Obteniendo la lista de repositorios");
+		ReportItemBuilder<Map<String,GHRepository>> builder=null;
+		try {
+			builder = new ReportItem.ReportItemBuilder<Map<String, GHRepository>>("listrepositories",
+					organization.getRepositories()); 
+			builder.source("GitHub");
+		} catch (ReportItemException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return builder.build();
 	}
 	
