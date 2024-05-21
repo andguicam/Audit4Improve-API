@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.lang.Math;
+import java.lang.Double;
 
 public class TeamsBalanceIndicatorStrategy implements IndicatorStrategy<Double> {
 
@@ -30,13 +31,11 @@ public class TeamsBalanceIndicatorStrategy implements IndicatorStrategy<Double> 
 		Optional<ReportItemI<Double>>  teamsBalance = metrics.stream().filter(m -> REQUIRED_METRICS.get(0).equals(m.getName())).findAny();
         Optional<ReportItemI<Double>>  repositories = metrics.stream().filter(m -> REQUIRED_METRICS.get(1).equals(m.getName())).findAny();
 		ReportItemI<Double> indicatorReport = null;
-        log.info("Antes del if");
-        log.info(teamsBalance.toString());
-        log.info(repositories.toString());
+        log.info("Teamsbalance: "+teamsBalance.toString());
+        log.info("Repositories: "+repositories.toString());
 		if (teamsBalance.isPresent() && repositories.isPresent()) {
-            log.info("DEspues del if");
 			Double teamsBalanceResult;
-            
+
 			// Se realiza el c�lculo del indicador
 			teamsBalanceResult = (Double)teamsBalance.get().getValue()*100/repositories.get().getValue();
 
@@ -48,7 +47,6 @@ public class TeamsBalanceIndicatorStrategy implements IndicatorStrategy<Double> 
                 .indicator(IndicatorState.UNDEFINED).build();
 
                 log.info("IndicatorReport: "+indicatorReport.toString());
-                log.info("Despues del try");
 			} catch (ReportItemException e) {
 				log.info("Error en ReportItemBuilder.");
 				e.printStackTrace();
