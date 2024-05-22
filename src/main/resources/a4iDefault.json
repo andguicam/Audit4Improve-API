@@ -136,8 +136,13 @@
 			"type": "java.lang.Integer",
 			"description": "Número de repositorios con pull requests pendientes",
 			"unit": "repositories"
-		}
-		
+		},
+		{
+			"name": "teamsBalance",
+			"type": "java.lang.Double",
+			"description": "Balance de equipos y open issues",
+			"unit": "ratio"
+		}		
 	],
 	"indicators": [{
 			"name": "issuesProgress",
@@ -158,6 +163,13 @@
 			"type": "java.lang.Double",
 			"description": "Ratio de issues abiertos frente a cerrados",
 			"unit": "ratio"
+		},
+		{
+			"name": "teamsBalance",
+			"type": "java.lang.Double",
+			"description": "Balance de equipos y open issues",
+			"unit": "ratio",
+			"limits": { "ok": 0.2, "warning": 0.6, "critical": 0.8 }
 		}
 	]
 }
